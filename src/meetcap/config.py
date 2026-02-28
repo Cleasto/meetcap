@@ -14,6 +14,7 @@ DEFAULT_CONFIG = {
     "recordings_dir": "~/MeetingRecordings",
     "notify_on_complete": True,
     "audio_device": None,  # None means use default/BlackHole
+    "mic_device": None,  # None means auto-detect (first non-virtual input)
     "sample_rate": 44100,
     "channels": 2,
 }
