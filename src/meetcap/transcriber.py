@@ -39,6 +39,7 @@ class Transcriber:
             str(audio_path),
             language="en",
             verbose=False,
+            fp16=False,
         )
 
         return {
