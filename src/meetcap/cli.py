@@ -260,5 +260,13 @@ def uninstall():
     click.echo("Watch service uninstalled.")
 
 
+@main.command()
+def ui():
+    """Launch the menu bar app."""
+    from .menubar import MeetcapStatusApp
+
+    MeetcapStatusApp().run()
+
+
 if __name__ == "__main__":
     main()
