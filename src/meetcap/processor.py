@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import shutil
 import subprocess
 from datetime import datetime
@@ -16,14 +17,34 @@ logger = logging.getLogger(__name__)
 
 
 def parse_filename_datetime(filename: str) -> datetime:
-    """Parse datetime from meeting filename."""
-    # Expected format: meeting-YYYY-MM-DD-HHMM.wav
-    try:
-        base = filename.replace("meeting-", "").replace(".wav", "")
-        return datetime.strptime(base, "%Y-%m-%d-%H%M")
-    except ValueError:
-        # Fall back to current time
-        return datetime.now()
+    """Parse datetime from meeting filename.
+
+    Handles both legacy format (meeting-YYYY-MM-DD-HHMM.wav) and the
+    topic-prefixed format (<slug>-YYYY-MM-DD-HHMM.md/.wav).
+    """
+    m = re.search(r"(\d{4}-\d{2}-\d{2}-\d{4})", filename)
+    if m:
+        try:
+            return datetime.strptime(m.group(1), "%Y-%m-%d-%H%M")
+        except ValueError:
+            pass
+    return datetime.now()
+
+
+def extract_topic_slug(summary: str) -> str:
+    """Extract the **Topic:** line from a Claude summary and return a URL-safe slug.
+
+    Falls back to 'meeting' if no topic line is found.
+    """
+    m = re.search(r"\*\*Topic:\*\*\s*(.+)", summary)
+    if not m:
+        return "meeting"
+    topic = m.group(1).strip()
+    # Slugify: lowercase, replace non-alphanumeric runs with hyphens
+    slug = re.sub(r"[^a-z0-9]+", "-", topic.lower()).strip("-")
+    # Limit length so filenames stay readable
+    slug = slug[:40].rstrip("-")
+    return slug or "meeting"
 
 
 def calculate_duration(audio_path: Path) -> str:
@@ -121,8 +142,10 @@ def process_recording(audio_path: Path, config: Optional[Dict] = None) -> Path:
     year_month_dir = output_dir / meeting_dt.strftime("%Y") / meeting_dt.strftime("%m")
     year_month_dir.mkdir(parents=True, exist_ok=True)
 
-    # Create markdown file
-    md_filename = audio_path.stem + ".md"
+    # Build filename: <topic-slug>-YYYY-MM-DD-HHMM.md
+    topic_slug = extract_topic_slug(summary) if api_key else "meeting"
+    datetime_str = meeting_dt.strftime("%Y-%m-%d-%H%M")
+    md_filename = f"{topic_slug}-{datetime_str}.md"
     md_path = year_month_dir / md_filename
 
     markdown = create_markdown(

@@ -6,7 +6,12 @@ import anthropic
 
 logger = logging.getLogger(__name__)
 
-SUMMARY_PROMPT = """You are analyzing a meeting transcript. Please provide a structured summary with the following sections:
+SUMMARY_PROMPT = """You are analyzing a meeting transcript. Please provide a structured summary.
+
+Start with a single line in exactly this format (2-5 words, no punctuation):
+**Topic:** <short topic title>
+
+Then include the following sections:
 
 ## Key Points
 List the main topics discussed and important information shared (3-7 bullet points).
