@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import calendar
+import html
 import threading
 import webbrowser
 from pathlib import Path
@@ -35,6 +36,29 @@ def _format_stem(stem: str) -> str:
         return dt.strftime("%B %d, %Y at %I:%M %p").replace(" 0", " ")
     except Exception:
         return stem
+
+
+def _make_snippet(body: str, query: str, context: int = 160) -> str:
+    """Return safe HTML with the first occurrence of query highlighted in a <mark>."""
+    lower_body = body.lower()
+    lower_q = query.lower()
+    idx = lower_body.find(lower_q)
+    if idx == -1:
+        return html.escape(body[:context * 2])
+    start = max(0, idx - context)
+    end = min(len(body), idx + len(query) + context)
+    chunk = body[start:end]
+    rel = chunk.lower().find(lower_q)
+    result = (
+        ("…" if start > 0 else "")
+        + html.escape(chunk[:rel])
+        + "<mark>"
+        + html.escape(chunk[rel : rel + len(query)])
+        + "</mark>"
+        + html.escape(chunk[rel + len(query) :])
+        + ("…" if end < len(body) else "")
+    )
+    return result
 
 
 def _month_label(month_key: str) -> str:
@@ -174,6 +198,40 @@ def create_app(config: Dict[str, Any]) -> Flask:
     def reopen_action(item_id: int):
         reopen_item(item_id)
         return redirect(request.referrer or url_for("actions"))
+
+    @app.route("/search")
+    def search():
+        q = request.args.get("q", "").strip()
+        if not q:
+            return redirect(url_for("index"))
+
+        output_dir = get_output_dir(config)
+        results = []
+        if output_dir.exists():
+            for md_path in sorted(
+                output_dir.glob("**/*.md"),
+                key=lambda p: p.stem,
+                reverse=True,
+            ):
+                try:
+                    body = md_path.read_text(encoding="utf-8", errors="ignore")
+                    if q.lower() in body.lower():
+                        results.append(
+                            {
+                                "stem": md_path.stem,
+                                "formatted": _format_stem(md_path.stem),
+                                "snippet": _make_snippet(body, q),
+                            }
+                        )
+                except Exception:
+                    continue
+
+        return render_template(
+            "search.html",
+            q=q,
+            results=results,
+            total_open=get_open_count(),
+        )
 
     return app
 

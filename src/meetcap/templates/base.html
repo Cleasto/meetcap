@@ -152,6 +152,33 @@ button.primary:hover, .btn.primary:hover {
 .prose th, .prose td { border: 1px solid var(--border); padding: 6px 10px; text-align: left; }
 .prose th { background: var(--bg); font-weight: 600; }
 
+mark {
+  background: #fff176;
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+@media (prefers-color-scheme: dark) {
+  mark { background: #665c00; }
+}
+.search-form {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.search-form input {
+  padding: 5px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  width: 180px;
+}
+.search-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
 details > summary {
   cursor: pointer;
   font-weight: 600;
@@ -185,6 +212,10 @@ details[open] > summary { margin-bottom: 10px; }
       <a href="/">Recordings</a>
       <a href="/actions">Action Items{% if total_open %}&nbsp;<span class="badge">{{ total_open }}</span>{% endif %}</a>
     </nav>
+    <form class="search-form" action="/search" method="get">
+      <input type="search" name="q" placeholder="Search…" value="{{ request.args.get('q', '') }}">
+      <button type="submit" class="btn">Search</button>
+    </form>
   </header>
   {% block content %}{% endblock %}
 </div>

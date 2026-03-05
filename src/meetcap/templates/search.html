@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Search: {{ q }} – Meetcap{% endblock %}
+
+{% block content %}
+<h2 style="font-size: 22px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 6px;">
+  Search results for <em style="font-style: normal; color: var(--accent);">{{ q }}</em>
+</h2>
+<div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 20px;">
+  {% if results %}{{ results | length }} recording{{ 's' if results | length != 1 }} matched{% else %}No recordings matched{% endif %}
+</div>
+
+{% if not results %}
+  <div class="card">
+    <p style="color: var(--text-secondary);">No results found for <strong>{{ q }}</strong>.</p>
+  </div>
+{% else %}
+  {% for r in results %}
+  <div class="card" style="display: flex; flex-direction: column; gap: 8px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="flex: 1; min-width: 0;">
+        <a href="/recording/{{ r.stem }}"
+           style="font-weight: 600; font-size: 15px; text-decoration: none; color: var(--text);">
+          {{ r.formatted }}
+        </a>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px; font-family: monospace;">
+          {{ r.stem }}
+        </div>
+      </div>
+      <a href="/recording/{{ r.stem }}" class="btn">View →</a>
+    </div>
+    <div style="font-size: 13px; color: var(--text-secondary); line-height: 1.6; border-top: 1px solid var(--border); padding-top: 8px;">
+      {{ r.snippet | safe }}
+    </div>
+  </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

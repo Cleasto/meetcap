@@ -10,8 +10,8 @@ from typing import Optional, Set
 import rumps
 
 from .actions import get_open_count
-from .config import get_output_dir, get_processed_dir, get_raw_dir, load_config
-from .processor import parse_filename_datetime, process_recording
+from .config import get_raw_dir, load_config
+from .processor import process_recording
 from .recorder import AudioRecorder, generate_filename
 from .server import open_actions, open_recordings, stop_server
 
@@ -103,8 +103,6 @@ class MeetcapStatusApp(rumps.App):
         self._raw_menu = rumps.MenuItem("Raw Recordings")
         self._open_recordings_btn = rumps.MenuItem("📋 Open Recordings", callback=self._open_recordings)
         self._open_actions_btn = rumps.MenuItem("✅ Action Items (0)", callback=self._open_actions)
-        self._search_btn = rumps.MenuItem("Search Recordings...", callback=self._search_recordings)
-        self._search_results_item = rumps.MenuItem("Search Results")
         self._status_item = rumps.MenuItem("⏳ Processing...")
         self._refresh_btn = rumps.MenuItem("Refresh", callback=self._rebuild_menus)
 
@@ -116,16 +114,12 @@ class MeetcapStatusApp(rumps.App):
             self._open_recordings_btn,
             self._open_actions_btn,
             None,
-            self._search_btn,
-            self._search_results_item,
-            None,
             self._status_item,
             self._refresh_btn,
         ]
 
         # Hide items that start hidden
         self._status_item._menuitem.setHidden_(True)
-        self._search_results_item._menuitem.setHidden_(True)
 
         # Disable AppKit's automatic item validation on the top-level status bar
         # menu so that container items (no callback, but with submenus) are never
@@ -258,67 +252,6 @@ class MeetcapStatusApp(rumps.App):
             path.unlink(missing_ok=True)
             self._rebuild_menus()
 
-    def _search_recordings(self, sender) -> None:
-        """Open a search dialog and update the Search Results submenu."""
-        window = rumps.Window(
-            message="Search transcripts:",
-            title="Search Recordings",
-            ok="Search",
-            cancel="Cancel",
-            dimensions=(320, 20),
-        )
-        response = window.run()
-
-        if response.clicked != 1:
-            return
-
-        query = response.text.strip()
-        if not query:
-            return
-
-        output_dir = get_output_dir(self._config)
-        processed_dir = get_processed_dir(self._config)
-
-        matches = []
-        if output_dir.exists():
-            for md_path in output_dir.glob("**/*.md"):
-                try:
-                    if query.lower() in md_path.read_text(encoding="utf-8", errors="ignore").lower():
-                        wav_path = processed_dir / (md_path.stem + ".wav")
-                        matches.append((md_path, wav_path if wav_path.exists() else None))
-                except Exception:
-                    continue
-
-        if self._search_results_item._menu is not None:
-            self._search_results_item.clear()
-
-        if matches:
-            self._search_results_item.title = f"Search Results ({len(matches)})"
-            self._search_results_item._menuitem.setHidden_(False)
-
-            for md_path, wav_path in matches:
-                item = rumps.MenuItem(md_path.stem)
-
-                if wav_path:
-                    item["▶ Play Recording"] = rumps.MenuItem(
-                        "▶ Play Recording",
-                        callback=lambda s, p=wav_path: self._play(p),
-                    )
-
-                item["📄 View Transcript"] = rumps.MenuItem(
-                    "📄 View Transcript",
-                    callback=lambda s, p=md_path: self._view_transcript(p),
-                )
-
-                self._search_results_item[md_path.stem] = item
-
-            # Keep match rows enabled so they expand to Play / View Transcript.
-            if self._search_results_item._menu is not None:
-                self._search_results_item._menu.setAutoenablesItems_(False)
-        else:
-            self._search_results_item.title = f"No results for '{query}'"
-            self._search_results_item._menuitem.setHidden_(False)
-
     def _open_recordings(self, _) -> None:
         """Open the Recordings browser in the default web browser."""
         threading.Thread(
@@ -335,18 +268,3 @@ class MeetcapStatusApp(rumps.App):
         """Clean up when the app is about to quit."""
         stop_server()
 
-    def _view_transcript(self, md_path: Path) -> None:
-        """Open a transcript file in the default application."""
-        subprocess.run(["open", str(md_path)])
-
-    def _find_markdown(self, wav_path: Path) -> Optional[Path]:
-        """Find the markdown file corresponding to a processed WAV."""
-        meeting_dt = parse_filename_datetime(wav_path.name)
-        output_dir = get_output_dir(self._config)
-        md_path = (
-            output_dir
-            / meeting_dt.strftime("%Y")
-            / meeting_dt.strftime("%m")
-            / (wav_path.stem + ".md")
-        )
-        return md_path if md_path.exists() else None
