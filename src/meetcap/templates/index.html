@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Recordings – Meetcap{% endblock %}
+
+{% block content %}
+{% if not groups %}
+  <div class="card">
+    <p style="color: var(--text-secondary);">No processed recordings found yet.</p>
+  </div>
+{% else %}
+  {% for month_key, month_label, recordings in groups %}
+    <div class="section-title">{{ month_label }}</div>
+    {% for r in recordings %}
+      <div class="card" style="display: flex; align-items: center; gap: 12px;">
+        <div style="flex: 1; min-width: 0;">
+          <a href="/recording/{{ r.stem }}"
+             style="font-weight: 600; font-size: 15px; text-decoration: none; color: var(--text);">
+            {{ r.formatted }}
+          </a>
+          <div style="font-size: 12px; color: var(--text-secondary); margin-top: 2px; font-family: monospace;">
+            {{ r.stem }}
+          </div>
+        </div>
+        {% if r.open_count > 0 %}
+          <span class="badge">{{ r.open_count }} action{{ 's' if r.open_count != 1 }}</span>
+        {% endif %}
+        <a href="/recording/{{ r.stem }}" class="btn">View →</a>
+      </div>
+    {% endfor %}
+  {% endfor %}
+{% endif %}
+{% endblock %}

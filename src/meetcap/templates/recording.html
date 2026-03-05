@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ formatted }} – Meetcap{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px;">
+  <a href="/" style="font-size: 13px; color: var(--text-secondary); text-decoration: none;">← Recordings</a>
+</div>
+
+<h2 style="font-size: 22px; font-weight: 700; margin-bottom: 4px; letter-spacing: -0.3px;">{{ formatted }}</h2>
+<div style="font-size: 12px; color: var(--text-secondary); font-family: monospace; margin-bottom: 20px;">{{ stem }}</div>
+
+{% if summary_html %}
+<div class="section-title">Summary</div>
+<div class="card prose">
+  {{ summary_html | safe }}
+</div>
+{% endif %}
+
+{% if items %}
+<div class="section-title">Action Items</div>
+<div class="card">
+  {% for item in items %}
+  <div class="action-item{% if item.status == 'closed' %} closed{% endif %}">
+    <div class="text">{{ item.text }}</div>
+    {% if item.status == 'open' %}
+    <form method="post" action="/actions/{{ item.id }}/close" style="display: inline;">
+      <button type="submit">Done</button>
+    </form>
+    {% else %}
+    <span class="badge done">Done</span>
+    <form method="post" action="/actions/{{ item.id }}/reopen" style="display: inline;">
+      <button type="submit">Reopen</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+{% if transcript %}
+<div class="section-title" style="margin-top: 20px;"></div>
+<details>
+  <summary>Full Transcript</summary>
+  <div class="card" style="white-space: pre-wrap; font-size: 13px; line-height: 1.7; font-family: ui-monospace, 'SF Mono', Menlo, monospace; overflow-x: auto;">{{ transcript }}</div>
+</details>
+{% endif %}
+{% endblock %}

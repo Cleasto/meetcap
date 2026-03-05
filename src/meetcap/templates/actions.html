@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Action Items – Meetcap{% endblock %}
+
+{% block content %}
+<h2 style="font-size: 22px; font-weight: 700; letter-spacing: -0.3px; margin-bottom: 20px;">
+  Action Items
+  {% if total_open %}
+  <span class="badge" style="font-size: 14px; vertical-align: middle;">{{ total_open }}</span>
+  {% endif %}
+</h2>
+
+{% if not groups %}
+  <div class="card">
+    <p style="color: var(--text-secondary);">No open action items — you're all caught up!</p>
+  </div>
+{% else %}
+  {% for stem, formatted, items in groups %}
+  <div class="section-title">
+    <a href="/recording/{{ stem }}" style="color: inherit; text-decoration: none;">{{ formatted }}</a>
+  </div>
+  <div class="card">
+    {% for item in items %}
+    <div class="action-item">
+      <div class="text">{{ item.text }}</div>
+      <form method="post" action="/actions/{{ item.id }}/close">
+        <button type="submit" class="primary">Done</button>
+      </form>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+{% endif %}
+{% endblock %}

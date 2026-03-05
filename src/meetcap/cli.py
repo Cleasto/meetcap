@@ -261,6 +261,18 @@ def uninstall():
 
 
 @main.command()
+@click.option("--port", default=5420, show_default=True, help="Port to listen on")
+def serve(port: int):
+    """Start the Flask review server."""
+    from .server import create_app
+
+    config = load_config()
+    app = create_app(config)
+    click.echo(f"Starting Meetcap server at http://127.0.0.1:{port}")
+    app.run(host="127.0.0.1", port=port)
+
+
+@main.command()
 def ui():
     """Launch the menu bar app."""
     from .menubar import MeetcapStatusApp

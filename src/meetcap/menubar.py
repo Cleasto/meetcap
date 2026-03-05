@@ -9,9 +9,11 @@ from typing import Optional, Set
 
 import rumps
 
+from .actions import get_open_count
 from .config import get_output_dir, get_processed_dir, get_raw_dir, load_config
 from .processor import parse_filename_datetime, process_recording
 from .recorder import AudioRecorder, generate_filename
+from .server import open_actions, open_recordings, stop_server
 
 
 def _make_bubble_icon():
@@ -99,6 +101,8 @@ class MeetcapStatusApp(rumps.App):
         # Persistent menu items
         self._record_btn = rumps.MenuItem("⏺ Start Recording", callback=self._toggle_recording)
         self._raw_menu = rumps.MenuItem("Raw Recordings")
+        self._open_recordings_btn = rumps.MenuItem("📋 Open Recordings", callback=self._open_recordings)
+        self._open_actions_btn = rumps.MenuItem("✅ Action Items (0)", callback=self._open_actions)
         self._search_btn = rumps.MenuItem("Search Recordings...", callback=self._search_recordings)
         self._search_results_item = rumps.MenuItem("Search Results")
         self._status_item = rumps.MenuItem("⏳ Processing...")
@@ -108,6 +112,9 @@ class MeetcapStatusApp(rumps.App):
             self._record_btn,
             None,
             self._raw_menu,
+            None,
+            self._open_recordings_btn,
+            self._open_actions_btn,
             None,
             self._search_btn,
             self._search_results_item,
@@ -170,6 +177,7 @@ class MeetcapStatusApp(rumps.App):
             self._raw_menu._menu.setAutoenablesItems_(False)
 
         self._raw_menu.title = f"Raw Recordings ({len(wavs)})"
+        self._open_actions_btn.title = f"✅ Action Items ({get_open_count()})"
 
     def _toggle_recording(self, sender) -> None:
         """Start or stop audio recording."""
@@ -310,6 +318,22 @@ class MeetcapStatusApp(rumps.App):
         else:
             self._search_results_item.title = f"No results for '{query}'"
             self._search_results_item._menuitem.setHidden_(False)
+
+    def _open_recordings(self, _) -> None:
+        """Open the Recordings browser in the default web browser."""
+        threading.Thread(
+            target=open_recordings, args=(self._config,), daemon=True
+        ).start()
+
+    def _open_actions(self, _) -> None:
+        """Open the Action Items page in the default web browser."""
+        threading.Thread(
+            target=open_actions, args=(self._config,), daemon=True
+        ).start()
+
+    def applicationWillTerminate_(self, notification) -> None:
+        """Clean up when the app is about to quit."""
+        stop_server()
 
     def _view_transcript(self, md_path: Path) -> None:
         """Open a transcript file in the default application."""
