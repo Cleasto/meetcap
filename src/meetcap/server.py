@@ -101,7 +101,7 @@ def create_app(config: Dict[str, Any]) -> Flask:
         if output_dir.exists():
             for md_path in sorted(
                 output_dir.glob("**/*.md"),
-                key=lambda p: p.stem,
+                key=lambda p: parse_filename_datetime(p.name),
                 reverse=True,
             ):
                 stem = md_path.stem
